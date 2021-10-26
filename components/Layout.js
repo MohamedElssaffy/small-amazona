@@ -1,26 +1,30 @@
-import React, { useContext } from 'react';
-import Head from 'next/head';
-import NextLink from 'next/link';
 import {
   AppBar,
+  Badge,
+  Button,
   Container,
+  createTheme,
+  CssBaseline,
+  Link,
+  Menu,
+  MenuItem,
+  Switch,
+  ThemeProvider,
   Toolbar,
   Typography,
-  Link,
-  createTheme,
-  ThemeProvider,
-  CssBaseline,
-  Switch,
-  Badge,
 } from '@material-ui/core';
-
-import useStyle from '../utils/styles';
-import { Store } from '../utils/store';
 import Cookies from 'js-cookie';
+import Head from 'next/head';
+import NextLink from 'next/link';
+import { useRouter } from 'next/router';
+import React, { Fragment, useContext, useState } from 'react';
+import { Store } from '../utils/store';
+import useStyle from '../utils/styles';
 
 export default function Layout({ children, title, description }) {
+  const router = useRouter();
   const { state, dispatch } = useContext(Store);
-  const { darkMode, cart } = state;
+  const { darkMode, cart, userInfo } = state;
   const classes = useStyle();
   const theme = createTheme({
     typography: {
@@ -53,6 +57,22 @@ export default function Layout({ children, title, description }) {
     Cookies.set('darkMode', !darkMode ? 'ON' : 'OFF');
   };
 
+  const [anchorEl, setAnchorEl] = useState(null);
+  const loginClickHandler = (e) => {
+    setAnchorEl(e.currentTarget);
+  };
+  const loginMenuCloseHandler = (e, redirect) => {
+    setAnchorEl(null);
+    if (redirect) {
+      router.push(redirect);
+    }
+  };
+  const logoutClickHandler = () => {
+    setAnchorEl(null);
+    dispatch({ type: 'USER_LOGOUT' });
+    router.push('/');
+  };
+
   return (
     <div>
       <Head>
@@ -72,7 +92,7 @@ export default function Layout({ children, title, description }) {
             <div>
               <Switch checked={darkMode} onChange={darkModeHandler}></Switch>
               <NextLink href='/cart' passHref>
-                <Link>
+                <Link suppressHydrationWarning={true}>
                   {cart.cartItems.length > 0 ? (
                     <Badge
                       color='secondary'
@@ -85,9 +105,35 @@ export default function Layout({ children, title, description }) {
                   )}
                 </Link>
               </NextLink>
-              <NextLink href='/login' passHref>
-                <Link>Login</Link>
-              </NextLink>
+              {userInfo ? (
+                <Fragment>
+                  <Button
+                    aria-controls='simple-menu'
+                    aria-haspopup='true'
+                    onClick={loginClickHandler}
+                    className={classes.navButton}
+                  >
+                    {userInfo.name}
+                  </Button>{' '}
+                  <Menu
+                    id='simple-menu'
+                    anchorEl={anchorEl}
+                    keepMounted
+                    open={Boolean(anchorEl)}
+                    onClose={loginMenuCloseHandler}
+                  >
+                    <MenuItem onClick={loginMenuCloseHandler}>Profile</MenuItem>
+                    <MenuItem onClick={loginMenuCloseHandler}>
+                      My account
+                    </MenuItem>
+                    <MenuItem onClick={logoutClickHandler}>Logout</MenuItem>
+                  </Menu>
+                </Fragment>
+              ) : (
+                <NextLink href='/login' passHref>
+                  <Link>Login</Link>
+                </NextLink>
+              )}
             </div>
           </Toolbar>
         </AppBar>
