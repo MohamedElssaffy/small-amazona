@@ -16,7 +16,7 @@ import Layout from '../components/Layout';
 import { Store } from '../utils/store';
 import useStyle from '../utils/styles';
 
-export default function LoginPge() {
+export default function RegisterPge() {
   const router = useRouter();
   const { dispatch } = useContext(Store);
   const {
@@ -31,12 +31,23 @@ export default function LoginPge() {
 
   const classes = useStyle();
 
-  const onSubmitHandler = async ({ email, password }) => {
+  const onSubmitHandler = async ({
+    name,
+    email,
+    password,
+    confirmPassword,
+  }) => {
     closeSnackbar();
+
+    if (password !== confirmPassword) {
+      return enqueueSnackbar("Password don't match", { variant: 'error' });
+    }
+
     setLoading(true);
     try {
-      const { data } = await axios.post('/api/users/login', {
+      const { data } = await axios.post('/api/users/register', {
         email,
+        name,
         password,
       });
       dispatch({ type: 'USER_LOGIN', payload: data });
@@ -51,12 +62,41 @@ export default function LoginPge() {
   };
 
   return (
-    <Layout title='Login'>
+    <Layout title='Register'>
       <form onSubmit={handleSubmit(onSubmitHandler)} className={classes.form}>
         <Typography component='h1' variant='h1'>
-          Login
+          Register
         </Typography>
         <List>
+          <ListItem>
+            <Controller
+              name='name'
+              control={control}
+              defaultValue=''
+              rules={{
+                required: true,
+                minLength: 2,
+              }}
+              render={({ field }) => (
+                <TextField
+                  label='Name'
+                  id='name'
+                  fullWidth
+                  variant='outlined'
+                  inputProps={{ type: 'name', name: 'name' }}
+                  error={!!errors.name}
+                  helperText={
+                    errors.name
+                      ? errors.name.type === 'minLength'
+                        ? 'Name length is more than 1'
+                        : 'Name is required'
+                      : ''
+                  }
+                  {...field}
+                />
+              )}
+            />
+          </ListItem>
           <ListItem>
             <Controller
               name='email'
@@ -116,6 +156,35 @@ export default function LoginPge() {
             />
           </ListItem>
           <ListItem>
+            <Controller
+              name='confirmPassword'
+              control={control}
+              defaultValue=''
+              rules={{
+                required: true,
+                minLength: 6,
+              }}
+              render={({ field }) => (
+                <TextField
+                  label='Confirm Password'
+                  id='confirmPassword'
+                  fullWidth
+                  variant='outlined'
+                  inputProps={{ type: 'password', name: 'confirmPassword' }}
+                  error={!!errors.confirmPassword}
+                  helperText={
+                    errors.confirmPassword
+                      ? errors.confirmPassword.type === 'minLength'
+                        ? 'Password Length is more than five'
+                        : 'Password is required'
+                      : ''
+                  }
+                  {...field}
+                />
+              )}
+            />
+          </ListItem>
+          <ListItem>
             <Button
               color='primary'
               variant='contained'
@@ -123,16 +192,16 @@ export default function LoginPge() {
               disabled={loading}
               fullWidth
             >
-              Login
+              Register
             </Button>
           </ListItem>
           <ListItem>
-            Don&apos;t have an account?&nbsp;
+            Already have an account?&nbsp;
             <NextLink
-              href={`/register${redirect ? `?redirect=${redirect}` : ''}`}
+              href={`/login${redirect ? `?redirect=${redirect}` : ''}`}
               passHref
             >
-              <Link>Register</Link>
+              <Link>Login</Link>
             </NextLink>
           </ListItem>
         </List>
