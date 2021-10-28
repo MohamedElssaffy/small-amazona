@@ -14,4 +14,23 @@ const signToken = (user) => {
   return token;
 };
 
-export { signToken };
+const isAuth = async (req, res, next) => {
+  const { authorization } = req.headers;
+
+  if (authorization) {
+    const token = authorization.slice(7, authorization.length);
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(401).send({ message: 'Invlid Token' });
+      } else {
+        req.user = decoded;
+        next();
+      }
+    });
+  } else {
+    res.status(401).send({ message: 'Please Login' });
+  }
+};
+
+export { signToken, isAuth };

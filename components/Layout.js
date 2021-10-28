@@ -25,7 +25,9 @@ export default function Layout({ children, title, description }) {
   const router = useRouter();
   const { state, dispatch } = useContext(Store);
   const { darkMode, cart, userInfo } = state;
+
   const classes = useStyle();
+
   const theme = createTheme({
     typography: {
       h1: {
@@ -105,7 +107,7 @@ export default function Layout({ children, title, description }) {
                   )}
                 </Link>
               </NextLink>
-              {userInfo ? (
+              {process.browser && userInfo ? (
                 <Fragment>
                   <Button
                     aria-controls='simple-menu'

@@ -83,7 +83,7 @@ export default function RegisterPge() {
                   id='name'
                   fullWidth
                   variant='outlined'
-                  inputProps={{ type: 'name', name: 'name' }}
+                  inputProps={{ type: 'text', name: 'name' }}
                   error={!!errors.name}
                   helperText={
                     errors.name
