@@ -1,5 +1,5 @@
 import nc from 'next-connect';
-import Product from '../../../../../models/Product';
+import User from '../../../../../models/User';
 import { isAdmin, isAuth } from '../../../../../utils/auth';
 import db from '../../../../../utils/db';
 import { onError } from '../../../../../utils/error';
@@ -11,35 +11,28 @@ handler.use(isAuth, isAdmin);
 handler.get(async (req, res) => {
   try {
     await db.connect();
-    const product = await Product.findById(req.query.id);
+    const user = await User.findById(req.query.id);
     await db.disconnect();
-    res.send(product);
+    res.send(user);
   } catch (err) {
     console.error(err);
     res.status(500).send({ message: 'Something went wrong' });
   }
 });
 handler.put(async (req, res) => {
-  const { name, price, image, countInStock, description, brand, category } =
-    req.body;
+  const { name, isAdmin } = req.body;
   try {
     await db.connect();
-    const product = await Product.findById(req.query.id);
-    if (!product) return res.status(404).send({ message: 'Product not found' });
+    const user = await User.findById(req.query.id);
+    if (!user) return res.status(404).send({ message: 'User not found' });
 
     if (name) {
-      product.name = name;
-      product.slug = name.toLowerCase().split(' ').join('-');
+      user.name = name;
     }
-    if (brand) product.brand = brand;
-    if (price) product.price = price;
-    if (category) product.category = category;
-    if (description) product.description = description;
-    if (countInStock) product.countInStock = countInStock;
-    if (image) product.image = image;
+    user.isAdmin = isAdmin;
 
-    await product.save();
-    res.send(product);
+    await user.save();
+    res.send(user);
     await db.disconnect();
   } catch (err) {
     console.error(err);
@@ -50,9 +43,9 @@ handler.put(async (req, res) => {
 handler.delete(async (req, res) => {
   try {
     await db.connect();
-    await Product.findByIdAndRemove(req.query.id);
+    await User.findByIdAndRemove(req.query.id);
     await db.disconnect();
-    res.send({ message: 'Product removed successfully' });
+    res.send({ message: 'User removed successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).send({ message: 'Something went wrong' });

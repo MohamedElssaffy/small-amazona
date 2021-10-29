@@ -12,6 +12,7 @@ import {
 import axios from 'axios';
 import dynamic from 'next/dynamic';
 import NextLink from 'next/link';
+import { useRouter } from 'next/router';
 import { useSnackbar } from 'notistack';
 import React, { useContext, useEffect, useReducer } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -28,7 +29,26 @@ const reducer = (state, action) => {
     case 'FETCH_FALI':
       return { ...state, loading: false, error: action.payload };
     case 'FETCH_SUCCESS':
-      return { loading: false, error: '' };
+      return { ...state, loading: false, product: action.payload, error: '' };
+    case 'UPDATE_REQUEST':
+      return { ...state, errorUpdate: '', loadingUpdate: true };
+
+    case 'UPDATE_FALI':
+      return { ...state, loadingUpdate: false, errorUpdate: action.payload };
+    case 'UPDATE_SUCCESS':
+      return { ...state, loadingUpdate: false, errorUpdate: '' };
+    case 'UPLOAD_REQUEST':
+      return { ...state, errorUpload: '', loadingUpload: true };
+
+    case 'UPLOAD_FALI':
+      return { ...state, loadingUpload: false, errorUpload: action.payload };
+    case 'UPLOAD_SUCCESS':
+      return {
+        ...state,
+        loadingUpload: false,
+        errorUpload: '',
+        image: action.payload,
+      };
 
     default:
       return state;
@@ -36,6 +56,7 @@ const reducer = (state, action) => {
 };
 
 function EditProduct({ params }) {
+  const router = useRouter();
   const { state } = useContext(Store);
   const { userInfo } = state;
   const {
@@ -47,9 +68,15 @@ function EditProduct({ params }) {
 
   const productId = params.id;
 
-  const [{ loading, error }, dispatch] = useReducer(reducer, {
+  const [
+    { loading, error, product, loadingUpdate, image, loadingUpload },
+    dispatch,
+  ] = useReducer(reducer, {
     loading: true,
     error: '',
+    product: null,
+    loadingUpdate: false,
+    loadingUpload: false,
   });
 
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
@@ -66,27 +93,28 @@ function EditProduct({ params }) {
           },
         });
 
-        dispatch({ type: 'FETCH_SUCCESS' });
-        setValue('name', data.name);
-        setValue('slug', data.slug);
-        setValue('price', data.price);
-        setValue('image', data.image);
-        setValue('category', data.category);
-        setValue('brand', data.brand);
-        setValue('countInStock', data.countInStock);
-        setValue('description', data.description);
-      } catch (error) {
+        dispatch({ type: 'FETCH_SUCCESS', payload: data });
+      } catch (err) {
         dispatch({ type: 'FETCH_FAIL' });
         enqueueSnackbar(errorMsg(err), { variant: 'error' });
       }
     };
-    fetchData();
-  }, []);
+    if (!product) {
+      fetchData();
+    }
+    if (product) {
+      setValue('name', product.name);
+      setValue('price', product.price);
+
+      setValue('category', product.category);
+      setValue('brand', product.brand);
+      setValue('countInStock', product.countInStock);
+      setValue('description', product.description);
+    }
+  }, [product]);
 
   const onSubmitHandler = async ({
     name,
-    slug,
-    image,
     description,
     price,
     countInStock,
@@ -96,12 +124,17 @@ function EditProduct({ params }) {
     closeSnackbar();
 
     try {
-      const { data } = await axios.put(
+      dispatch({ type: 'UPDATE_REQUEST' });
+      await axios.put(
         `/api/admin/products/${productId}`,
         {
-          email,
           name,
-          password,
+          description,
+          image,
+          price,
+          countInStock,
+          brand,
+          category,
         },
         {
           headers: {
@@ -109,8 +142,41 @@ function EditProduct({ params }) {
           },
         }
       );
+      dispatch({ type: 'UPDATE_SUCCESS' });
       enqueueSnackbar('Product update successfully', { variant: 'success' });
+      router.push('/admin/products');
     } catch (err) {
+      dispatch({ type: 'UPDATE_FAIL' });
+      enqueueSnackbar(errorMsg(err), { variant: 'error' });
+    }
+  };
+
+  const uploadHandler = async (e) => {
+    closeSnackbar();
+
+    const file = e.target.files[0];
+    const formDataBody = new FormData();
+    formDataBody.append('file', file);
+
+    try {
+      dispatch({ type: 'UPLOAD_REQUEST' });
+      const { data } = await axios.post(
+        `/api/admin/upload`,
+
+        formDataBody,
+
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            authorization: `Bearer ${userInfo.token}`,
+          },
+        }
+      );
+
+      dispatch({ type: 'UPLOAD_SUCCESS', payload: data.secure_url });
+      enqueueSnackbar('Upload image successfully', { variant: 'success' });
+    } catch (err) {
+      dispatch({ type: 'UPLOAD_FAIL' });
       enqueueSnackbar(errorMsg(err), { variant: 'error' });
     }
   };
@@ -134,6 +200,11 @@ function EditProduct({ params }) {
               <NextLink href='/admin/products' passHref>
                 <ListItem selected button component='a'>
                   <ListItemText primary='Products' />
+                </ListItem>
+              </NextLink>
+              <NextLink href='/admin/users' passHref>
+                <ListItem button component='a'>
+                  <ListItemText primary='Users' />
                 </ListItem>
               </NextLink>
             </List>
@@ -180,27 +251,7 @@ function EditProduct({ params }) {
                         )}
                       />
                     </ListItem>
-                    <ListItem>
-                      <Controller
-                        name='slug'
-                        control={control}
-                        defaultValue=''
-                        rules={{
-                          required: true,
-                        }}
-                        render={({ field }) => (
-                          <TextField
-                            label='Slug'
-                            id='slug'
-                            fullWidth
-                            variant='outlined'
-                            error={!!errors.slug}
-                            helperText={errors.slug ? 'Slug is required' : ''}
-                            {...field}
-                          />
-                        )}
-                      />
-                    </ListItem>
+
                     <ListItem>
                       <Controller
                         name='price'
@@ -224,25 +275,16 @@ function EditProduct({ params }) {
                       />
                     </ListItem>
                     <ListItem>
-                      <Controller
-                        name='image'
-                        control={control}
-                        defaultValue=''
-                        rules={{
-                          required: true,
-                        }}
-                        render={({ field }) => (
-                          <TextField
-                            label='Image'
-                            id='image'
-                            fullWidth
-                            variant='outlined'
-                            error={!!errors.image}
-                            helperText={errors.image ? 'Image is required' : ''}
-                            {...field}
-                          />
-                        )}
-                      />
+                      <Button variant='contained' component='label'>
+                        Upload Image
+                        <input
+                          type='file'
+                          onChange={uploadHandler}
+                          accept='image/png, image/gif, image/jpeg'
+                          hidden
+                        />
+                      </Button>
+                      {loadingUpload && <CircularProgress />}
                     </ListItem>
                     <ListItem>
                       <Controller
@@ -350,11 +392,12 @@ function EditProduct({ params }) {
                         color='primary'
                         variant='contained'
                         type='submit'
-                        disabled={loading}
+                        disabled={loadingUpdate || loadingUpload}
                         fullWidth
                       >
                         Update
                       </Button>
+                      {loadingUpdate && <CircularProgress />}
                     </ListItem>
                   </List>
                 </form>
