@@ -65,7 +65,8 @@ export default function Layout({ children, title, description }) {
   };
   const loginMenuCloseHandler = (e, redirect) => {
     setAnchorEl(null);
-    if (redirect) {
+
+    if (redirect && redirect !== 'backdropClick') {
       router.push(redirect);
     }
   };
