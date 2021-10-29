@@ -63,13 +63,8 @@ export default function PaymentPage() {
                 name='paymentMethod'
               >
                 <FormControlLabel
-                  label='PayPal'
+                  label='Online'
                   value='PayPal'
-                  control={<Radio />}
-                />
-                <FormControlLabel
-                  label='Stripe'
-                  value='Stripe'
                   control={<Radio />}
                 />
                 <FormControlLabel

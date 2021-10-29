@@ -9,6 +9,7 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  Button,
   TableHead,
   TableRow,
   Typography,
@@ -45,6 +46,28 @@ const reducer = (state, action) => {
       return { ...state, payLoading: false, paySuccess: action.payload };
     case 'PAY_RESET':
       return { ...state, payLoading: false, paySuccess: false, payError: '' };
+    case 'DELIVERED_REQUEST':
+      return { ...state, deliveredLoading: true };
+
+    case 'DELIVERED_FALI':
+      return {
+        ...state,
+        deliveredLoading: false,
+        deliveredError: action.payload,
+      };
+    case 'DELIVERED_SUCCESS':
+      return {
+        ...state,
+        deliveredLoading: false,
+        deliveredSuccess: action.payload,
+      };
+    case 'DELIVERED_RESET':
+      return {
+        ...state,
+        deliveredLoading: false,
+        deliveredSuccess: false,
+        deliveredError: '',
+      };
 
     default:
       return state;
@@ -57,17 +80,19 @@ function OrderPage({ params }) {
   const { userInfo } = state;
   const classes = useStyle();
   const [{ isPending }, paypalDispatch] = usePayPalScriptReducer();
-  const [{ order, paySuccess, loading, error }, dispatch] = useReducer(
-    reducer,
-    {
-      order: {},
-      loading: true,
-      error: '',
-      paySuccess: false,
-      payError: '',
-      payLoading: false,
-    }
-  );
+  const [
+    { order, paySuccess, deliveredSuccess, deliveredLoading, loading, error },
+    dispatch,
+  ] = useReducer(reducer, {
+    order: {},
+    loading: true,
+    error: '',
+    paySuccess: false,
+    payError: '',
+    payLoading: false,
+    deliveredLoading: false,
+    deliveredSuccess: false,
+  });
 
   const {
     shippingAddress,
@@ -103,10 +128,19 @@ function OrderPage({ params }) {
       }
     };
 
-    if (!order._id || paySuccess || (order._id && order._id !== orderId)) {
+    if (
+      !order._id ||
+      paySuccess ||
+      deliveredSuccess ||
+      (order._id && order._id !== orderId)
+    ) {
       fetchOrder();
       if (paySuccess) {
         dispatch({ type: 'PAY_RESET' });
+      }
+
+      if (deliveredSuccess) {
+        dispatch({ type: 'DELIVERED_RESET' });
       }
     } else {
       const loadPaypalScript = async () => {
@@ -121,7 +155,7 @@ function OrderPage({ params }) {
       };
       loadPaypalScript();
     }
-  }, [order, paySuccess]);
+  }, [order, paySuccess, deliveredSuccess]);
 
   const createOrder = (data, actions) => {
     return actions.order
@@ -157,6 +191,24 @@ function OrderPage({ params }) {
 
   const onError = (err) => {
     enqueueSnackbar(errorMsg(err), { variant: 'error' });
+  };
+
+  const deliveredHandler = async () => {
+    try {
+      dispatch({ type: 'DELIVERED_REQUEST' });
+
+      const { data } = await axios.put(
+        `/api/admin/orders/${order._id}/delivered`,
+        {},
+        { headers: { authorization: `Bearer ${userInfo.token}` } }
+      );
+
+      dispatch({ type: 'DELIVERED_SUCCESS', payload: data });
+      enqueueSnackbar('Order is delivered', { variant: 'success' });
+    } catch (err) {
+      dispatch({ type: 'DELIVERED_FALI', payload: errorMsg(err) });
+      enqueueSnackbar(errorMsg(err), { variant: 'error' });
+    }
   };
 
   return (
@@ -223,7 +275,6 @@ function OrderPage({ params }) {
                           <TableCell>Name</TableCell>
                           <TableCell align='right'>Quantity</TableCell>
                           <TableCell align='right'>Price</TableCell>
-                          <TableCell align='right'>Action</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -328,6 +379,19 @@ function OrderPage({ params }) {
                         onApprove={onApprove}
                       ></PayPalButtons>
                     )}
+                  </ListItem>
+                )}
+                {userInfo.isAdmin && order.isPaid && !order.isDelivered && (
+                  <ListItem>
+                    {deliveredLoading && <CircularProgress />}
+                    <Button
+                      variant='contained'
+                      color='primary'
+                      fullWidth
+                      onClick={deliveredHandler}
+                    >
+                      Delivered Order
+                    </Button>
                   </ListItem>
                 )}
               </List>

@@ -1,24 +1,22 @@
 import {
-  Grid,
+  Button,
   Card,
   CardActionArea,
   CardActions,
-  CardMedia,
   CardContent,
+  CardMedia,
+  Grid,
   Typography,
-  Button,
 } from '@material-ui/core';
-import NextLink from 'next/link';
-import Layout from '../components/Layout';
-import db from '../utils/db';
-import Product from '../models/Product';
 import axios from 'axios';
-import { useRouter } from 'next/router';
+import NextLink from 'next/link';
 import { useContext } from 'react';
+import Layout from '../components/Layout';
+import Product from '../models/Product';
+import db from '../utils/db';
 import { Store } from '../utils/store';
 
 export default function Home({ products }) {
-  const router = useRouter();
   const { state, dispatch } = useContext(Store);
   const addToCartHandler = async (product) => {
     const { data } = await axios.get(`/api/products/${product._id}`);
@@ -32,7 +30,6 @@ export default function Home({ products }) {
     }
 
     dispatch({ type: 'CART_ADD_ITEM', payload: { ...product, quantity } });
-    router.push('/cart');
   };
   return (
     <Layout>

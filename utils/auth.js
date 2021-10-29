@@ -33,4 +33,14 @@ const isAuth = async (req, res, next) => {
   }
 };
 
-export { signToken, isAuth };
+const isAdmin = (req, res, next) => {
+  if (req.user?.isAdmin) {
+    next();
+  } else {
+    res
+      .status(401)
+      .send({ message: 'You Dont Have Permission to do this action' });
+  }
+};
+
+export { signToken, isAuth, isAdmin };

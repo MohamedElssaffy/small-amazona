@@ -13,11 +13,10 @@ import { useSnackbar } from 'notistack';
 import React, { useContext, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import Layout from '../components/Layout';
-import { errorMsg } from '../utils/error';
 import { Store } from '../utils/store';
 import useStyle from '../utils/styles';
 
-export default function RegisterPge() {
+export default function LoginPge() {
   const router = useRouter();
   const { dispatch } = useContext(Store);
   const {
@@ -32,69 +31,32 @@ export default function RegisterPge() {
 
   const classes = useStyle();
 
-  const onSubmitHandler = async ({
-    name,
-    email,
-    password,
-    confirmPassword,
-  }) => {
+  const onSubmitHandler = async ({ email, password }) => {
     closeSnackbar();
-
-    if (password !== confirmPassword) {
-      return enqueueSnackbar("Password don't match", { variant: 'error' });
-    }
-
     setLoading(true);
     try {
-      const { data } = await axios.post('/api/users/register', {
+      const { data } = await axios.post('/api/users/login', {
         email,
-        name,
         password,
       });
       dispatch({ type: 'USER_LOGIN', payload: data });
       router.push(redirect || '/');
     } catch (err) {
-      enqueueSnackbar(errorMsg(err), { variant: 'error' });
+      enqueueSnackbar(
+        err.response?.data ? err.response.data.message : err.message,
+        { variant: 'error' }
+      );
       setLoading(false);
     }
   };
 
   return (
-    <Layout title='Register'>
+    <Layout title='Login'>
       <form onSubmit={handleSubmit(onSubmitHandler)} className={classes.form}>
         <Typography component='h1' variant='h1'>
-          Register
+          Login
         </Typography>
         <List>
-          <ListItem>
-            <Controller
-              name='name'
-              control={control}
-              defaultValue=''
-              rules={{
-                required: true,
-                minLength: 2,
-              }}
-              render={({ field }) => (
-                <TextField
-                  label='Name'
-                  id='name'
-                  fullWidth
-                  variant='outlined'
-                  inputProps={{ type: 'text', name: 'name' }}
-                  error={!!errors.name}
-                  helperText={
-                    errors.name
-                      ? errors.name.type === 'minLength'
-                        ? 'Name length is more than 1'
-                        : 'Name is required'
-                      : ''
-                  }
-                  {...field}
-                />
-              )}
-            />
-          </ListItem>
           <ListItem>
             <Controller
               name='email'
@@ -154,35 +116,6 @@ export default function RegisterPge() {
             />
           </ListItem>
           <ListItem>
-            <Controller
-              name='confirmPassword'
-              control={control}
-              defaultValue=''
-              rules={{
-                required: true,
-                minLength: 6,
-              }}
-              render={({ field }) => (
-                <TextField
-                  label='Confirm Password'
-                  id='confirmPassword'
-                  fullWidth
-                  variant='outlined'
-                  inputProps={{ type: 'password', name: 'confirmPassword' }}
-                  error={!!errors.confirmPassword}
-                  helperText={
-                    errors.confirmPassword
-                      ? errors.confirmPassword.type === 'minLength'
-                        ? 'Password Length is more than five'
-                        : 'Password is required'
-                      : ''
-                  }
-                  {...field}
-                />
-              )}
-            />
-          </ListItem>
-          <ListItem>
             <Button
               color='primary'
               variant='contained'
@@ -190,16 +123,16 @@ export default function RegisterPge() {
               disabled={loading}
               fullWidth
             >
-              Register
+              Login
             </Button>
           </ListItem>
           <ListItem>
-            Already have an account?&nbsp;
+            Don&apos;t have an account?&nbsp;
             <NextLink
-              href={`/login${redirect ? `?redirect=${redirect}` : ''}`}
+              href={`/register${redirect ? `?redirect=${redirect}` : ''}`}
               passHref
             >
-              <Link>Login</Link>
+              <Link>Register</Link>
             </NextLink>
           </ListItem>
         </List>

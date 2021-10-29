@@ -52,103 +52,107 @@ function CartPage() {
         Shopping Cart
       </Typography>
       <Grid container spacing={2}>
-        <Grid item md={9} xs={12}>
-          {cartItems.length === 0 ? (
+        {cartItems.length === 0 ? (
+          <Grid item xs={12}>
             <div>
               Cart is empty.{' '}
               <NextLink href='/' passHref>
                 <Link>Go shopping</Link>
               </NextLink>
             </div>
-          ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Image</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell align='right'>Quantity</TableCell>
-                    <TableCell align='right'>Price</TableCell>
-                    <TableCell align='right'>Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {cartItems.map((item) => (
-                    <TableRow key={item._id}>
-                      <TableCell>
-                        <NextLink href={`/product/${item.slug}`} passHref>
-                          <Link>
-                            <Image
-                              src={item.image}
-                              alt={item.name}
-                              width={50}
-                              height={50}
-                            />
-                          </Link>
-                        </NextLink>
-                      </TableCell>
-                      <TableCell>
-                        <NextLink href={`/product/${item.slug}`} passHref>
-                          <Link>
-                            <Typography>{item.name}</Typography>
-                          </Link>
-                        </NextLink>
-                      </TableCell>
-                      <TableCell align='right'>
-                        <Select
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateCartHandler(item, e.target.value)
-                          }
-                        >
-                          {[...Array(item.countInStock).keys()].map((v) => (
-                            <MenuItem key={v + 1} value={v + 1}>
-                              {' '}
-                              {v + 1}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </TableCell>
-                      <TableCell align='right'>$ {item.price}</TableCell>
-                      <TableCell align='right'>
-                        <Button
-                          onClick={() => removeCartHandler(item._id)}
-                          variant='contained'
-                          color='secondary'
-                        >
-                          x
-                        </Button>
-                      </TableCell>
+          </Grid>
+        ) : (
+          <>
+            <Grid item md={9} xs={12}>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Image</TableCell>
+                      <TableCell>Name</TableCell>
+                      <TableCell align='right'>Quantity</TableCell>
+                      <TableCell align='right'>Price</TableCell>
+                      <TableCell align='right'>Action</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </Grid>
-        <Grid item md={3} xs={12}>
-          <Card>
-            <List>
-              <ListItem>
-                <Typography component='h2' variant='h2'>
-                  Subtotal ({cartItems.reduce((a, c) => a + c.quantity, 0)}{' '}
-                  Items) : $
-                  {cartItems.reduce((a, c) => a + c.quantity * c.price, 0)}
-                </Typography>
-              </ListItem>
-              <ListItem>
-                <Button
-                  onClick={checkoutHandler}
-                  variant='contained'
-                  color='primary'
-                  fullWidth
-                >
-                  Check Out
-                </Button>
-              </ListItem>
-            </List>
-          </Card>
-        </Grid>
+                  </TableHead>
+                  <TableBody>
+                    {cartItems.map((item) => (
+                      <TableRow key={item._id}>
+                        <TableCell>
+                          <NextLink href={`/product/${item.slug}`} passHref>
+                            <Link>
+                              <Image
+                                src={item.image}
+                                alt={item.name}
+                                width={50}
+                                height={50}
+                              />
+                            </Link>
+                          </NextLink>
+                        </TableCell>
+                        <TableCell>
+                          <NextLink href={`/product/${item.slug}`} passHref>
+                            <Link>
+                              <Typography>{item.name}</Typography>
+                            </Link>
+                          </NextLink>
+                        </TableCell>
+                        <TableCell align='right'>
+                          <Select
+                            value={item.quantity}
+                            onChange={(e) =>
+                              updateCartHandler(item, e.target.value)
+                            }
+                          >
+                            {[...Array(item.countInStock).keys()].map((v) => (
+                              <MenuItem key={v + 1} value={v + 1}>
+                                {' '}
+                                {v + 1}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </TableCell>
+                        <TableCell align='right'>$ {item.price}</TableCell>
+                        <TableCell align='right'>
+                          <Button
+                            onClick={() => removeCartHandler(item._id)}
+                            variant='contained'
+                            color='secondary'
+                          >
+                            x
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>
+            <Grid item md={3} xs={12}>
+              <Card>
+                <List>
+                  <ListItem>
+                    <Typography component='h2' variant='h2'>
+                      Subtotal ({cartItems.reduce((a, c) => a + c.quantity, 0)}{' '}
+                      Items) : $
+                      {cartItems.reduce((a, c) => a + c.quantity * c.price, 0)}
+                    </Typography>
+                  </ListItem>
+                  <ListItem>
+                    <Button
+                      onClick={checkoutHandler}
+                      variant='contained'
+                      color='primary'
+                      fullWidth
+                    >
+                      Check Out
+                    </Button>
+                  </ListItem>
+                </List>
+              </Card>
+            </Grid>
+          </>
+        )}
       </Grid>
     </Layout>
   );
