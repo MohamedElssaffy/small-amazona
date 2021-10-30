@@ -8,6 +8,7 @@ import {
   Grid,
   Typography,
 } from '@material-ui/core';
+import { Rating } from '@material-ui/lab';
 import axios from 'axios';
 import NextLink from 'next/link';
 import { useContext } from 'react';
@@ -47,6 +48,7 @@ export default function Home({ products }) {
                   />
                   <CardContent>
                     <Typography>{product.name}</Typography>
+                    <Rating value={product.rating} readOnly />
                   </CardContent>
                 </CardActionArea>
               </NextLink>
@@ -71,9 +73,14 @@ export default function Home({ products }) {
 export async function getServerSideProps() {
   try {
     await db.connect();
-    const products = await Product.find({}).lean();
+    let products = await Product.find({}).lean();
     await db.disconnect();
+    products = products.map((product) => {
+      product.reviews = JSON.parse(JSON.stringify(product.reviews));
+      return product;
+    });
 
+    console.log({ products });
     return {
       props: {
         products: products.map(db.convertDocToObject),
