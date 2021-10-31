@@ -20,8 +20,17 @@ handler.get(async (req, res) => {
   }
 });
 handler.put(async (req, res) => {
-  const { name, price, image, countInStock, description, brand, category } =
-    req.body;
+  const {
+    name,
+    price,
+    image,
+    featuredImage,
+    isFeatured,
+    countInStock,
+    description,
+    brand,
+    category,
+  } = req.body;
   try {
     await db.connect();
     const product = await Product.findById(req.query.id);
@@ -37,6 +46,8 @@ handler.put(async (req, res) => {
     if (description) product.description = description;
     if (countInStock) product.countInStock = countInStock;
     if (image) product.image = image;
+    if (featuredImage) product.featuredImage = featuredImage;
+    if (isFeatured) product.isFeatured = isFeatured;
 
     await product.save();
     res.send(product);

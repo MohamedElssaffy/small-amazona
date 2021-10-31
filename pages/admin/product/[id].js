@@ -2,19 +2,22 @@ import {
   Button,
   Card,
   CircularProgress,
+  FormControlLabel,
   Grid,
   List,
   ListItem,
   ListItemText,
   TextField,
   Typography,
+  Checkbox,
 } from '@material-ui/core';
+
 import axios from 'axios';
 import dynamic from 'next/dynamic';
 import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import { useSnackbar } from 'notistack';
-import React, { useContext, useEffect, useReducer } from 'react';
+import React, { useContext, useEffect, useReducer, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import Layout from '../../../components/Layout';
 import { errorMsg } from '../../../utils/error';
@@ -37,17 +40,33 @@ const reducer = (state, action) => {
       return { ...state, loadingUpdate: false, errorUpdate: action.payload };
     case 'UPDATE_SUCCESS':
       return { ...state, loadingUpdate: false, errorUpdate: '' };
-    case 'UPLOAD_REQUEST':
-      return { ...state, errorUpload: '', loadingUpload: true };
 
-    case 'UPLOAD_FALI':
+    case 'UPLOAD_REQUEST_IMAGE':
+      return { ...state, errorUpload: '', loadingUpload: true };
+    case 'UPLOAD_REQUEST_FEATURED_IMAGE':
+      return { ...state, errorUpload: '', loadingUploadFeatured: true };
+
+    case 'UPLOAD_FALI_IMAGE':
       return { ...state, loadingUpload: false, errorUpload: action.payload };
-    case 'UPLOAD_SUCCESS':
+    case 'UPLOAD_FALI_FEATURED_IMAGE':
+      return {
+        ...state,
+        loadingUploadFeatured: false,
+        errorUpload: action.payload,
+      };
+    case 'UPLOAD_SUCCESS_IMAGE':
       return {
         ...state,
         loadingUpload: false,
         errorUpload: '',
         image: action.payload,
+      };
+    case 'UPLOAD_SUCCESS_FEATURED_IMAGE':
+      return {
+        ...state,
+        loadingUploadFeatured: false,
+        errorUpload: '',
+        featuredImage: action.payload,
       };
 
     default:
@@ -69,7 +88,16 @@ function EditProduct({ params }) {
   const productId = params.id;
 
   const [
-    { loading, error, product, loadingUpdate, image, loadingUpload },
+    {
+      loading,
+      error,
+      product,
+      loadingUpdate,
+      image,
+      featuredImage,
+      loadingUpload,
+      loadingUploadFeatured,
+    },
     dispatch,
   ] = useReducer(reducer, {
     loading: true,
@@ -77,11 +105,13 @@ function EditProduct({ params }) {
     product: null,
     loadingUpdate: false,
     loadingUpload: false,
+    loadingUploadFeatured: false,
   });
 
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   const classes = useStyle();
+  const [isFeatured, setIsFeatured] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -103,9 +133,10 @@ function EditProduct({ params }) {
       fetchData();
     }
     if (product) {
+      console.log(product.isFeatured);
       setValue('name', product.name);
       setValue('price', product.price);
-
+      setIsFeatured(product.isFeatured);
       setValue('category', product.category);
       setValue('brand', product.brand);
       setValue('countInStock', product.countInStock);
@@ -131,6 +162,8 @@ function EditProduct({ params }) {
           name,
           description,
           image,
+          isFeatured,
+          featuredImage,
           price,
           countInStock,
           brand,
@@ -151,7 +184,7 @@ function EditProduct({ params }) {
     }
   };
 
-  const uploadHandler = async (e) => {
+  const uploadHandler = async (e, imageField = 'IMAGE') => {
     closeSnackbar();
 
     const file = e.target.files[0];
@@ -159,7 +192,7 @@ function EditProduct({ params }) {
     formDataBody.append('file', file);
 
     try {
-      dispatch({ type: 'UPLOAD_REQUEST' });
+      dispatch({ type: `UPLOAD_REQUEST_${imageField}` });
       const { data } = await axios.post(
         `/api/admin/upload`,
 
@@ -173,10 +206,13 @@ function EditProduct({ params }) {
         }
       );
 
-      dispatch({ type: 'UPLOAD_SUCCESS', payload: data.secure_url });
+      dispatch({
+        type: `UPLOAD_SUCCESS_${imageField}`,
+        payload: data.secure_url,
+      });
       enqueueSnackbar('Upload image successfully', { variant: 'success' });
     } catch (err) {
-      dispatch({ type: 'UPLOAD_FAIL' });
+      dispatch({ type: `UPLOAD_FAIL_${imageField}` });
       enqueueSnackbar(errorMsg(err), { variant: 'error' });
     }
   };
@@ -287,6 +323,34 @@ function EditProduct({ params }) {
                       {loadingUpload && <CircularProgress />}
                     </ListItem>
                     <ListItem>
+                      <FormControlLabel
+                        label='Is Featured'
+                        control={
+                          <Checkbox
+                            checked={isFeatured}
+                            name='isFeatured'
+                            onClick={(e) => setIsFeatured(e.target.checked)}
+                          />
+                        }
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <Button
+                        disabled={!isFeatured}
+                        variant='contained'
+                        component='label'
+                      >
+                        Upload Featured Image
+                        <input
+                          type='file'
+                          onChange={(e) => uploadHandler(e, 'FEATURED_IMAGE')}
+                          accept='image/png, image/gif, image/jpeg'
+                          hidden
+                        />
+                      </Button>
+                      {loadingUploadFeatured && <CircularProgress />}
+                    </ListItem>
+                    <ListItem>
                       <Controller
                         name='category'
                         control={control}
@@ -392,7 +456,11 @@ function EditProduct({ params }) {
                         color='primary'
                         variant='contained'
                         type='submit'
-                        disabled={loadingUpdate || loadingUpload}
+                        disabled={
+                          loadingUpdate ||
+                          loadingUpload ||
+                          loadingUploadFeatured
+                        }
                         fullWidth
                       >
                         Update

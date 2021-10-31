@@ -1,24 +1,19 @@
-import {
-  Button,
-  Card,
-  CardActionArea,
-  CardActions,
-  CardContent,
-  CardMedia,
-  Grid,
-  Typography,
-} from '@material-ui/core';
-import { Rating } from '@material-ui/lab';
+/* eslint-disable @next/next/no-img-element */
+import { Grid, Link, Typography } from '@material-ui/core';
 import axios from 'axios';
 import NextLink from 'next/link';
 import { useContext } from 'react';
+import Carousel from 'react-material-ui-carousel';
 import Layout from '../components/Layout';
+import ProductItem from '../components/ProductItem';
 import Product from '../models/Product';
 import db from '../utils/db';
 import { Store } from '../utils/store';
+import useStyle from '../utils/styles';
 
-export default function Home({ products }) {
+export default function Home({ topRatedProducts, featuredProducts }) {
   const { state, dispatch } = useContext(Store);
+  const classes = useStyle();
   const addToCartHandler = async (product) => {
     const { data } = await axios.get(`/api/products/${product._id}`);
 
@@ -34,35 +29,31 @@ export default function Home({ products }) {
   };
   return (
     <Layout>
-      <h1>Products</h1>
+      <Carousel className={classes.carousel} animation='slide'>
+        {featuredProducts.map((product) => (
+          <NextLink
+            key={product._id}
+            href={`/product/${product.slug}`}
+            passHref
+          >
+            <Link>
+              <img
+                src={product.featuredImage}
+                alt={product.name}
+                className={classes.featuredImage}
+              />
+            </Link>
+          </NextLink>
+        ))}
+      </Carousel>
+      <Typography variant='h2'>Popular Products</Typography>
       <Grid container spacing={3}>
-        {products.map((product) => (
+        {topRatedProducts.map((product) => (
           <Grid item key={product.name} md={4}>
-            <Card>
-              <NextLink href={`/product/${product.slug}`}>
-                <CardActionArea>
-                  <CardMedia
-                    component='img'
-                    image={product.image}
-                    title={product.name}
-                  />
-                  <CardContent>
-                    <Typography>{product.name}</Typography>
-                    <Rating value={product.rating} readOnly />
-                  </CardContent>
-                </CardActionArea>
-              </NextLink>
-              <CardActions>
-                <Typography>$ {product.price}</Typography>
-                <Button
-                  onClick={() => addToCartHandler(product)}
-                  size='small'
-                  color='primary'
-                >
-                  Add To Cart
-                </Button>
-              </CardActions>
-            </Card>
+            <ProductItem
+              product={product}
+              addToCartHandler={addToCartHandler}
+            />
           </Grid>
         ))}
       </Grid>
@@ -73,17 +64,26 @@ export default function Home({ products }) {
 export async function getServerSideProps() {
   try {
     await db.connect();
-    let products = await Product.find({}).lean();
+    let topRatedProducts = await Product.find({})
+      .sort({ rating: -1 })
+      .limit(6)
+      .lean();
+    const featuredProducts = await Product.find(
+      { isFeatured: true },
+      '-reviews'
+    )
+      .limit(3)
+      .lean();
     await db.disconnect();
-    products = products.map((product) => {
+    topRatedProducts = topRatedProducts.map((product) => {
       product.reviews = JSON.parse(JSON.stringify(product.reviews));
       return product;
     });
 
-    console.log({ products });
     return {
       props: {
-        products: products.map(db.convertDocToObject),
+        topRatedProducts: topRatedProducts.map(db.convertDocToObject),
+        featuredProducts: featuredProducts.map(db.convertDocToObject),
       },
     };
   } catch (err) {

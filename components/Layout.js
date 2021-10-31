@@ -1,11 +1,19 @@
 import {
   AppBar,
   Badge,
+  Box,
   Button,
   Container,
   createTheme,
   CssBaseline,
+  Divider,
+  Drawer,
+  IconButton,
+  InputBase,
   Link,
+  List,
+  ListItem,
+  ListItemText,
   Menu,
   MenuItem,
   Switch,
@@ -13,11 +21,17 @@ import {
   Toolbar,
   Typography,
 } from '@material-ui/core';
+import CancelIcon from '@material-ui/icons/Cancel';
+import MenuIcon from '@material-ui/icons/Menu';
+import SearchIcon from '@material-ui/icons/Search';
+import axios from 'axios';
 import Cookies from 'js-cookie';
 import Head from 'next/head';
 import NextLink from 'next/link';
 import { useRouter } from 'next/router';
-import React, { Fragment, useContext, useState } from 'react';
+import { useSnackbar } from 'notistack';
+import React, { Fragment, useContext, useEffect, useState } from 'react';
+import { errorMsg } from '../utils/error';
 import { Store } from '../utils/store';
 import useStyle from '../utils/styles';
 
@@ -25,6 +39,12 @@ export default function Layout({ children, title, description }) {
   const router = useRouter();
   const { state, dispatch } = useContext(Store);
   const { darkMode, cart, userInfo } = state;
+
+  const [sidebarVisibel, setSidebarVisibel] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [query, setQuery] = useState('');
+
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   const classes = useStyle();
 
@@ -54,6 +74,38 @@ export default function Layout({ children, title, description }) {
       },
     },
   });
+
+  const sidebarOpenHandler = () => {
+    setSidebarVisibel(true);
+  };
+  const sidebarCloseHandler = () => {
+    setSidebarVisibel(false);
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data } = await axios.get('/api/products/categories');
+
+      setCategories(data);
+    } catch (err) {
+      enqueueSnackbar(errorMsg(err), { variant: 'error' });
+      setTimeout(closeSnackbar, 3000);
+    }
+  };
+
+  const queryChangeHandler = (e) => {
+    setQuery(e.target.value);
+  };
+
+  const submitHandler = (e) => {
+    e.preventDefault();
+    router.push(`/search?query=${query}`);
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
   const darkModeHandler = () => {
     dispatch({ type: darkMode ? 'DARK_MODE_OFF' : 'DARK_MODE_ON' });
     Cookies.set('darkMode', !darkMode ? 'ON' : 'OFF');
@@ -85,13 +137,78 @@ export default function Layout({ children, title, description }) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <AppBar position='static' className={classes.navbar}>
-          <Toolbar>
-            <NextLink href='/' passHref>
-              <Link>
-                <Typography className={classes.brand}>amazona</Typography>
-              </Link>
-            </NextLink>
-            <div className={classes.grow}></div>
+          <Toolbar className={classes.toolbar}>
+            <Box display='flex' alignItems='center'>
+              <IconButton
+                className={classes.menuButton}
+                edge='start'
+                aria-label='open drawer'
+                onClick={sidebarOpenHandler}
+              >
+                <MenuIcon className={classes.navButton} />
+              </IconButton>
+              <NextLink href='/' passHref>
+                <Link>
+                  <Typography className={classes.brand}>amazona</Typography>
+                </Link>
+              </NextLink>
+            </Box>
+            <Drawer
+              anchor='left'
+              open={sidebarVisibel}
+              onClose={sidebarCloseHandler}
+            >
+              <List>
+                <ListItem>
+                  <Box
+                    display='flex'
+                    alignItems='center'
+                    justifyContent='space-between'
+                  >
+                    <Typography>Shopping by category</Typography>
+                    <IconButton
+                      aria-label='close'
+                      onClick={sidebarCloseHandler}
+                    >
+                      <CancelIcon />
+                    </IconButton>
+                  </Box>
+                </ListItem>
+                <Divider light />
+                {categories.map((category) => (
+                  <NextLink
+                    href={`/search?category=${category}`}
+                    passHref
+                    key={category}
+                  >
+                    <ListItem
+                      button
+                      component='a'
+                      onClick={sidebarCloseHandler}
+                    >
+                      <ListItemText primary={category} />
+                    </ListItem>
+                  </NextLink>
+                ))}
+              </List>
+            </Drawer>
+            <div className={classes.searchSection}>
+              <form onSubmit={submitHandler} className={classes.searchForm}>
+                <InputBase
+                  name='query'
+                  onChange={queryChangeHandler}
+                  placeholder='Search Products'
+                  className={classes.searchInput}
+                />
+                <IconButton
+                  type='submit'
+                  className={classes.iconButton}
+                  aria-label='search'
+                >
+                  <SearchIcon />
+                </IconButton>
+              </form>
+            </div>
             <div>
               <Switch checked={darkMode} onChange={darkModeHandler}></Switch>
               <NextLink href='/cart' passHref>
