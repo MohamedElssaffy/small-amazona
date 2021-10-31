@@ -222,14 +222,15 @@ export default function SearchPage({
             </Grid>
           </Grid>
           <Grid className={classes.mt1} container spacing={3}>
-            {products.map((product) => (
-              <Grid item key={product.name} md={4}>
-                <ProductItem
-                  product={product}
-                  addToCartHandler={addToCartHandler}
-                />
-              </Grid>
-            ))}
+            {products &&
+              products.map((product) => (
+                <Grid item key={product.name} md={4}>
+                  <ProductItem
+                    product={product}
+                    addToCartHandler={addToCartHandler}
+                  />
+                </Grid>
+              ))}
           </Grid>
           <Pagination
             className={classes.mt1}
