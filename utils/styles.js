@@ -89,10 +89,12 @@ const useStyle = makeStyles((theme) => ({
     marginRight: 5,
   },
   carousel: {
-    maxHeight: '80vh',
     marginTop: '1rem',
+    width: '100%',
+    hegith: '100%',
     '& img': {
-      maxHeight: '80%',
+      width: '100%',
+      hegith: '80%',
     },
   },
   mt1: {
